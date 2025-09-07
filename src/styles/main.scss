@@ -1,0 +1,137 @@
+$font-size: 30px;
+$font-family: Arial, Helvetica, sans-serif;
+
+$day-size: 100px;
+$day-gap: 1px;
+$day-padding: 10px;
+$border: 1px solid #000;
+$day-bg: #eee;
+
+$day-hover-bg:#ffbfcb;
+$day-hover-lift: -20px;
+$anim-dur:0.5s;
+$cols: 7;
+
+$hover-lift-abs: $day-hover-lift * -1; // -20px => 20px
+
+// Larguras calculadas (Sass math)
+$container-width: $day-size * $cols + $day-gap * ($cols - 1);
+$calendar-width: $container-width + (2 * $day-padding);
+$column-step: $day-size + $day-gap;
+
+// Mixin de centralização (parametrizável)
+@mixin with-centered-content($justify: center, $align: center, $direction: row) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: $font-family;
+  @include with-centered-content; // centraliza o bloco .calendar na tela
+  min-height: 100vh;
+}
+
+.calendar{
+  width: $calendar-width;
+  padding: $day-padding $day-padding; // corrigido (sem vírgula)
+
+  &__weekdays{
+    @include with-centered-content(flex-start, center);
+    gap: $day-gap;
+    margin-bottom: $hover-lift-abs;
+    width: $container-width;
+    position: relative;
+    z-index: 2;
+  }
+
+  &__weekday{
+    @include with-centered-content(center, center);
+    width: $day-size;
+    height: 28px;      // valor único, ok manter direto
+    font-size: 14px;   // valor único, ok manter direto
+    font-weight: 600;
+  }
+  
+  &__days {
+    @include with-centered-content(flex-start, flex-start);
+    flex-wrap: wrap;
+    gap: $day-gap;
+    width: $container-width; // 7 colunas com espaçamento
+  }
+
+  &__day {
+    position: relative;
+    box-sizing: border-box;   // 100px incluindo a borda
+    width: $day-size;
+    height: $day-size;
+    background: $day-bg;
+    border: $border;
+    transition: background-color $anim-dur ease, transform $anim-dur ease;
+
+    @include with-centered-content; // centraliza o número do ::before
+
+    &::before {
+      font-family: $font-family;
+      font-size: $font-size;
+      font-weight: 400;
+      line-height: 1;
+    }
+
+    &:hover {
+      cursor: pointer;
+      background: #ffbfcb;
+      transform: translateY($day-hover-lift);
+      z-index: 1;
+    }
+  }
+}
+
+// Labels dos dias da semana (Monday-first) via @each
+$week-days: Mon, Tue, Wed, Thu, Fri, Sat, Sun;
+
+@each $day in $week-days {
+  .calendar__weekday:nth-child(#{index($week-days, $day)})::before {
+    content: "#{$day}";
+  }
+}
+
+$start-days: (
+  mon: 0,
+  tue: 1,
+  wed: 2,
+  thu: 3,
+  fri: 4,
+  sat: 5,
+  sun: 6
+);
+
+// Gera os dois seletores: --start-<dia> e --start-day-<dia>
+@each $name, $steps in $start-days {
+  .calendar--start-#{$name},
+  .calendar--start-day-#{$name} {
+    .calendar__days .calendar__day:first-child {
+      margin-left: $steps * $column-step; // $column-step = $day-size + $day-gap
+    }
+  }
+}
+
+
+// Modifiers de tamanho do mês (28..31) via @for
+@for $len from 28 through 31 {
+  .calendar--month-length-#{$len} {
+    .calendar__days .calendar__day:nth-child(n + #{$len + 1}) {
+      display: none;
+    }
+  }
+}
+
+// Números dos dias via ::before + @for (1..31)
+@for $i from 1 through 31 {
+  .calendar__day:nth-child(#{$i})::before {
+    content: "#{$i}";
+  }
+}
